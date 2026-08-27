@@ -14,3 +14,7 @@ Why Snowflake specifically: it's a real cloud warehouse (separate storage and co
                      |
 dim_demographic — fct_llm_audit_response — dim_experiment_variant
 ```
+fct_llm_audit_response (grain: one row per model response run) measures: auditc_total_score, word_structural_similarity, semantic_cosine_similarity, zone_mentioned_in_prompt, analysis_eligible, response_status, run_utc
+dim_disease — which disease (if any) was injected into the prompt
+dim_demographic — biological sex / patient age / whether age was mentioned in the prompt
+dim_experiment_variant — which script + prompt protocol (standard vs. WHO-strict) produced the run
