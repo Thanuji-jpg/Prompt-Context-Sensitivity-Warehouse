@@ -83,9 +83,9 @@ Fix: coalesce(age_in_prompt, 'False') = 'True' in stg_audit_responses_typed.sql,
 cd "llm_bias_audit"
 dbt deps
 ```
-2)Configure your Snowflake connection in ~/.dbt/profiles.yml (kept outside the repo on purpose — never commit credentials). See profiles.yml.example in this folder for the template this project expects, and export the referenced environment variables before running dbt.
+2) Configure your Snowflake connection in ~/.dbt/profiles.yml (kept outside the repo on purpose — never commit credentials). See profiles.yml.example in this folder for the template this project expects, and export the referenced environment variables before running dbt.
 
-3)Load the seeds, build the models, and run the tests:
+3) Load the seeds, build the models, and run the tests:
 ```
 dbt seed
 dbt run
