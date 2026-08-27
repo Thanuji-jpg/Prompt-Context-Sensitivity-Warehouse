@@ -65,3 +65,33 @@ Kidney Disease: Present	50	0.494
 Anxiety Disorder: Present	50	0.489
 Depression: Present	50	0.482
 ```
+
+Reading: mentioning kidney disease, anxiety, or depression pulls the model's response noticeably further from the reference answer than the no-disease baseline — the model isn't just answering the alcohol-screening question, it's injecting disease-specific commentary that changes the substance of the response. Diabetes and heart disease barely move the needle. Splitting by prompt protocol shows the effect is even more visible under standard prompting (avg similarity 0.515) than under the WHO-strict, reference-guided protocol (0.689) — the stricter protocol constrains the model closer to the reference regardless of what's mentioned. Sex showed a small difference (female 0.592 vs. male 0.609) on the no-disease baseline runs.
+
+Caveat, stated honestly: each group is 50–100 runs — enough to show a consistent, repeatable pipeline and a visible pattern, not enough to claim statistical significance. The value of this project is the pipeline and the methodology, not a clinical claim.
+
+## Testing, and a real bug it caught
+marts.yml declares 23 dbt tests across the four models: unique + not_null on every surrogate key, relationships tests on every foreign key in fct_llm_audit_response (fact → dimension), and accepted_values on dim_experiment_variant.protocol. Each test compiles to a select that should return zero rows; any row returned is a failure.
+
+The first dbt test run failed not_null on fct_llm_audit_response.demographic_key. Root cause: 3 of the 15 seed files don't have an age_in_prompt column at all, so after dbt_utils.union_relations stacked all 15 seeds together, those rows got NULL there. The original staging logic did (age_in_prompt = 'True') — but in SQL, anything compared to NULL evaluates to NULL, not false. That NULL flowed into the join condition in fct_llm_audit_response, and NULL = NULL is also not true (SQL's three-valued logic), so the join silently failed to match for ~150 rows.
+
+Fix: coalesce(age_in_prompt, 'False') = 'True' in stg_audit_responses_typed.sql, so missing data becomes a real FALSE before the comparison runs. One line, fixed at the staging layer, which propagated automatically through the dimension and fact models on the next dbt run. Re-running dbt test afterward: PASS=23 WARN=0 ERROR=0.
+
+## Setup
+1) Install deps (dbt-core + dbt-snowflake are already installed in this environment; this pulls the dbt_utils package):
+```
+cd "llm_bias_audit"
+dbt deps
+```
+2)Configure your Snowflake connection in ~/.dbt/profiles.yml (kept outside the repo on purpose — never commit credentials). See profiles.yml.example in this folder for the template this project expects, and export the referenced environment variables before running dbt.
+
+3)Load the seeds, build the models, and run the tests:
+```
+dbt seed
+dbt run
+dbt test
+dbt docs generate && dbt docs serve
+```
+
+
+
